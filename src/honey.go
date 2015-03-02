@@ -7,8 +7,8 @@ import (
 
 func main() {
 	var (
-		err error
-		conf *honey.Config
+		err    error
+		conf   *honey.Config
 		server *honey.Server
 	)
 

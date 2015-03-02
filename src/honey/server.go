@@ -1,8 +1,8 @@
 package honey
 
 import (
-	"net"
 	"log"
+	"net"
 )
 
 type Server struct {
@@ -12,7 +12,7 @@ type Server struct {
 func (s *Server) ListenAndServe() error {
 	var (
 		err error
-		l net.Listener
+		l   net.Listener
 	)
 
 	if l, err = net.ListenTCP("tcp", s.Conf.la); err != nil {
@@ -27,10 +27,10 @@ func (s *Server) Serve(l net.Listener) error {
 
 	var (
 		err error
-		nc net.Conn
-		ne net.Error
-		ok bool
-		c *conn
+		nc  net.Conn
+		ne  net.Error
+		ok  bool
+		c   *conn
 	)
 
 	for {

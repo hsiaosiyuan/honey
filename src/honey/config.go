@@ -1,30 +1,30 @@
 package honey
 
 import (
-	"flag"
-	"net"
 	"errors"
+	"flag"
 	"math"
+	"net"
 )
 
 type Config struct {
-	strLA       string
-	strSA       string
-	un          []byte
-	pwd         []byte
-	unL         int
-	pwdL        int
-	useAuth     bool
-	la *net.TCPAddr
-	sa *net.TCPAddr
+	strLA   string
+	strSA   string
+	un      []byte
+	pwd     []byte
+	unL     int
+	pwdL    int
+	useAuth bool
+	la      *net.TCPAddr
+	sa      *net.TCPAddr
 }
 
 func NewConfig() (*Config, error) {
 	var (
-		err error
+		err  error
 		conf *Config
-		u string
-		p string
+		u    string
+		p    string
 	)
 
 	conf = &Config{}
@@ -63,11 +63,11 @@ func NewConfig() (*Config, error) {
 	conf.pwd = []byte(p)
 
 	if conf.la, err = net.ResolveTCPAddr("tcp", conf.strLA); err != nil {
-		return nil, errors.New("invalid local address: "+err.Error())
+		return nil, errors.New("invalid local address: " + err.Error())
 	}
 
 	if conf.sa, err = net.ResolveTCPAddr("tcp", conf.strSA); err != nil {
-		return nil, errors.New("invalid server address: "+err.Error())
+		return nil, errors.New("invalid server address: " + err.Error())
 	}
 
 	return conf, nil

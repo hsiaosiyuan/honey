@@ -2,19 +2,19 @@ package honey
 
 import (
 	"bufio"
-	"net"
-	"net/textproto"
-	"strings"
+	"bytes"
 	"errors"
+	"io"
+	"log"
+	"math"
+	"net"
+	"net/http"
+	"net/textproto"
 	"net/url"
 	"strconv"
-	"math"
+	"strings"
 	"sync"
-	"io"
 	"sync/atomic"
-	"log"
-	"bytes"
-	"net/http"
 )
 
 const (
@@ -39,15 +39,15 @@ const (
 var idSeed = uint64(0)
 
 type conn struct {
-	id          uint64
-	server *Server
-	nc          net.Conn  // client conn
-	cbr *bufio.Reader     // buffer reader for client conn
-	ctp *textproto.Reader // textprotp reader for client conn
-	isConnect   bool
-	ss *net.TCPConn
-	authMethod  byte
-	readBuf     *bytes.Buffer
+	id         uint64
+	server     *Server
+	nc         net.Conn          // client conn
+	cbr        *bufio.Reader     // buffer reader for client conn
+	ctp        *textproto.Reader // textprotp reader for client conn
+	isConnect  bool
+	ss         *net.TCPConn
+	authMethod byte
+	readBuf    *bytes.Buffer
 }
 
 func newConn(nc net.Conn, server *Server) (*conn, error) {
@@ -71,7 +71,7 @@ func parseRequestLine(line string) (method, requestURI, proto string, ok bool) {
 	if s1 < 0 || s2 < 0 {
 		return
 	}
-	s2 += s1+1
+	s2 += s1 + 1
 	return line[:s1], line[s1+1 : s2], line[s2+1:], true
 }
 
@@ -97,12 +97,12 @@ func (c *conn) processHostPortNormal(requestUri string) (host string, port strin
 	// the same.  In the second case, any Host line is ignored.
 
 	var (
-		header    textproto.MIMEHeader
-		s string
-		pu *url.URL
-		ae *net.AddrError
-		ok bool
-		h http.Header
+		header textproto.MIMEHeader
+		s      string
+		pu     *url.URL
+		ae     *net.AddrError
+		ok     bool
+		h      http.Header
 	)
 
 	if header, err = c.ctp.ReadMIMEHeader(); err != nil {
@@ -118,7 +118,7 @@ func (c *conn) processHostPortNormal(requestUri string) (host string, port strin
 		if host, port, err = net.SplitHostPort(s); err != nil {
 			goto errReturn
 		}
-	}else {
+	} else {
 		if pu, err = url.Parse(requestUri); err != nil {
 			goto errReturn
 		}
@@ -127,7 +127,7 @@ func (c *conn) processHostPortNormal(requestUri string) (host string, port strin
 			if ae, ok = err.(*net.AddrError); ok && ae.Err == errMissingPort {
 				host = pu.Host
 				port = "80"
-			}else {
+			} else {
 				goto errReturn
 			}
 		}
@@ -150,15 +150,15 @@ errReturn:
 
 func (c *conn) processHostPort() (host string, port string, err error) {
 	var (
-		s string
-		ok bool
-		method string
+		s          string
+		ok         bool
+		method     string
 		requestUri string
 	)
 
 	// read first line
 	if s, err = c.ctp.ReadLine(); err != nil {
-		return "", "", errors.New("failed to read first line: "+err.Error())
+		return "", "", errors.New("failed to read first line: " + err.Error())
 	}
 
 	// store the read first line
@@ -191,7 +191,7 @@ func (c *conn) makeShakeHandMethodSelection() []byte {
 func (c *conn) authUnPwd() error {
 	var (
 		err error
-		b = []byte{unPwdVersion, byte(c.server.Conf.unL)}
+		b   = []byte{unPwdVersion, byte(c.server.Conf.unL)}
 	)
 
 	b = append(b, c.server.Conf.un...)
@@ -215,27 +215,27 @@ func (c *conn) authUnPwd() error {
 
 func (c *conn) makeSocks5Command(host, port string) ([]byte, error) {
 	var (
-		b = []byte{version5, connectCmd, rsv}
-		ip net.IP
-		ip4 net.IP
-		ip6 net.IP
-		aTyp byte
-		n int
-		portInt int
+		b         = []byte{version5, connectCmd, rsv}
+		ip        net.IP
+		ip4       net.IP
+		ip6       net.IP
+		aTyp      byte
+		n         int
+		portInt   int
 		portInt16 uint16
-		err error
+		err       error
 	)
 
 	ip = net.ParseIP(host)
 	if ip == nil {
 		aTyp = aTypDomain
-	}else if ip4 = ip.To4(); ip4 != nil {
+	} else if ip4 = ip.To4(); ip4 != nil {
 		aTyp = aTypIPv4
-	}else if ip6 = ip.To16(); ip6 != nil {
+	} else if ip6 = ip.To16(); ip6 != nil {
 		aTyp = aTypIPv6
 	}
 
-	switch aTyp{
+	switch aTyp {
 	case aTypDomain:
 		if n = len(host); n > math.MaxUint8 {
 			return nil, errors.New("too large doamin")
@@ -264,7 +264,7 @@ appendPort:
 	}
 
 	portInt16 = uint16(portInt)
-	b = append(b, byte(portInt16 >> 8))
+	b = append(b, byte(portInt16>>8))
 	b = append(b, byte(portInt16))
 
 	return b, nil
@@ -290,10 +290,10 @@ func (c *conn) readCmdReplay() error {
 
 func (c *conn) shakeHandWithSocks5Server() error {
 	var (
-		err error
-		b []byte
-		buf = make([]byte, 2)
-		cmd []byte
+		err  error
+		b    []byte
+		buf  = make([]byte, 2)
+		cmd  []byte
 		host string
 		port string
 	)
@@ -357,10 +357,10 @@ Proxy-agent: honey/0.1
 
 func (c *conn) transfer() error {
 	var (
-		err error
+		err  error
 		err1 error
 		err2 error
-		wg *sync.WaitGroup
+		wg   *sync.WaitGroup
 	)
 
 	if !c.isConnect {
@@ -368,7 +368,7 @@ func (c *conn) transfer() error {
 		if _, err = c.readBuf.WriteTo(c.ss); err != nil {
 			return errors.New("failed to send read bytes to server: " + err.Error())
 		}
-	}else {
+	} else {
 		c.connectShakeHand()
 	}
 
