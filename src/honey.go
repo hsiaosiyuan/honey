@@ -17,6 +17,8 @@ func main() {
 	}
 
 	server = &honey.Server{conf}
+	server.IncreaseRlimit()
+	
 	if err = server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
